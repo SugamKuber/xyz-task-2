@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"errors"
 	"xyz-task-2/internals/database/redis"
 	"xyz-task-2/internals/database/scylla"
 )
@@ -25,8 +26,8 @@ type RedisConfig struct {
 }
 
 
-func NewConfig() *Config {
-	return &Config{
+func Load() (*Config, error) {
+	config := &Config{
 		ServerAddress: ":8080",
 		ScyllaDB: ScyllaDBConfig{
 			Hosts:    []string{"scylla-node1:9042"},
@@ -38,6 +39,19 @@ func NewConfig() *Config {
 			DB:       0,
 		},
 	}
+
+	
+	if config.ServerAddress == "" {
+		return nil, errors.New("server address cannot be empty")
+	}
+	if len(config.ScyllaDB.Hosts) == 0 {
+		return nil, errors.New("no ScyllaDB hosts defined")
+	}
+	if config.Redis.Address == "" {
+		return nil, errors.New("Redis address cannot be empty")
+	}
+
+	return config, nil
 }
 
 
