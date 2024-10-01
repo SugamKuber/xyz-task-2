@@ -1,0 +1,12 @@
+server:
+  address: ":8080"
+
+scylladb:
+  hosts:
+    - "scylla-node1:9042"
+  keyspace: "stimuler_ai"
+
+redis:
+  address: "redis:6379"
+  password: ""
+  db: 0
