@@ -27,7 +27,7 @@ func Load() (*Config, error) {
 		ServerAddress: ":8080",
 		ScyllaDB: ScyllaDBConfig{
 			Hosts:    []string{"scylla:9042"},
-			Keyspace: "system",
+			Keyspace: "xyz",
 		},
 		Redis: RedisConfig{
 			Address:  "redis:6379",

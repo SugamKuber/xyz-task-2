@@ -1,8 +1,10 @@
 package db
 
 import (
-	"github.com/gocql/gocql"
+	"fmt"
 	"xyz-task-2/internals/models"
+
+	"github.com/gocql/gocql"
 )
 
 type ScyllaClient struct {
@@ -33,17 +35,22 @@ func (c *ScyllaClient) Query(query string, values ...interface{}) *gocql.Iter {
 	return c.session.Query(query, values...).Iter()
 }
 
+func (sc *ScyllaClient) GetSession() *gocql.Session {
+	return sc.session
+}
+
 func (c *ScyllaClient) GetTopErrors(userID string, limit int) ([]models.Error, error) {
 	var errors []models.Error
 	query := `
-		SELECT error_category, error_subcategory, COUNT(*) as frequency
-		FROM user_errors
+		SELECT error_category, error_subcategory, frequency
+		FROM error_frequencies
 		WHERE user_id = ?
-		GROUP BY error_category, error_subcategory
 		ORDER BY frequency DESC
 		LIMIT ?
 	`
 	iter := c.session.Query(query, userID, limit).Iter()
+	fmt.Println(iter)
+	fmt.Println("::::")
 
 	var category, subcategory string
 	var frequency int

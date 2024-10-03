@@ -1,9 +1,9 @@
 package recommendation
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"sort"
-	"time"
+	// "time"
 
 	"xyz-task-2/internals/db"
 	"xyz-task-2/internals/models"
@@ -22,16 +22,16 @@ func NewService(scyllaClient *db.ScyllaClient, redisClient *db.RedisClient) *Ser
 }
 
 func (s *Service) GetExerciseRecommendation(userID string) (models.ExerciseRecommendation, error) {
-	cacheKey := "user:" + userID + ":exercise_recommendation"
+	// cacheKey := "user:" + userID + ":exercise_recommendation"
 
-	cachedData, err := s.redisClient.Get(cacheKey)
-	if err == nil {
-		var recommendation models.ExerciseRecommendation
-		err = json.Unmarshal([]byte(cachedData), &recommendation)
-		if err == nil {
-			return recommendation, nil
-		}
-	}
+	// cachedData, err := s.redisClient.Get(cacheKey)
+	// if err == nil {
+	// 	var recommendation models.ExerciseRecommendation
+	// 	err = json.Unmarshal([]byte(cachedData), &recommendation)
+	// 	if err == nil {
+	// 		return recommendation, nil
+	// 	}
+	// }
 
 	errors, err := s.scyllaClient.GetTopErrors(userID, 10)
 	if err != nil {
@@ -43,8 +43,8 @@ func (s *Service) GetExerciseRecommendation(userID string) (models.ExerciseRecom
 		TopErrors: groupErrorsByCategory(errors),
 	}
 
-	jsonData, _ := json.Marshal(recommendation)
-	s.redisClient.Set(cacheKey, jsonData, time.Hour)
+	// jsonData, _ := json.Marshal(recommendation)
+	// s.redisClient.Set(cacheKey, jsonData, time.Hour)
 
 	return recommendation, nil
 }
