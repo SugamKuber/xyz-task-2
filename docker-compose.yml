@@ -6,22 +6,30 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - scylla
-      - redis
+      scylla:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   scylla:
     image: scylladb/scylla:4.5.0
     ports:
       - "9042:9042"
-    volumes:
-      - scylla_data:/var/lib/scylla
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "SHOW VERSION"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:6.2-alpine
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   scylla_data:

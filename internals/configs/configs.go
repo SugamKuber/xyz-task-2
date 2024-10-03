@@ -1,54 +1,63 @@
 package configs
 
 import (
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-
-	"xyz-task-2/internals/database/redis"
-	"xyz-task-2/internals/database/scylla"
+	"errors"
+	"xyz-task-2/internals/db"
 )
 
 type Config struct {
-	ServerAddress string         `yaml:"server_address"`
-	ScyllaDB      ScyllaDBConfig `yaml:"scylla_db"`
-	Redis         RedisConfig    `yaml:"redis"`
+	ServerAddress string
+	ScyllaDB      ScyllaDBConfig
+	Redis         RedisConfig
 }
 
 type ScyllaDBConfig struct {
-	Hosts    []string `yaml:"hosts"`
-	Keyspace string   `yaml:"keyspace"`
+	Hosts    []string
+	Keyspace string
 }
 
 type RedisConfig struct {
-	Address  string `yaml:"address"`
-	Password string `yaml:"password"`
-	DB       int    `yaml:"db"`
+	Address  string
+	Password string
+	DB       int
 }
 
 func Load() (*Config, error) {
-	data, err := ioutil.ReadFile("config.yaml")
-	if err != nil {
-		return nil, err
+	config := &Config{
+		ServerAddress: ":8080",
+		ScyllaDB: ScyllaDBConfig{
+			Hosts:    []string{"scylla:9042"},
+			Keyspace: "system",
+		},
+		Redis: RedisConfig{
+			Address:  "redis:6379",
+			Password: "",
+			DB:       0,
+		},
 	}
 
-	config := &Config{}
-	err = yaml.Unmarshal(data, config)
-	if err != nil {
-		return nil, err
+	if config.ServerAddress == "" {
+		return nil, errors.New("server address cannot be empty")
+	}
+	if len(config.ScyllaDB.Hosts) == 0 {
+		return nil, errors.New("no ScyllaDB hosts defined")
+	}
+	if config.Redis.Address == "" {
+		return nil, errors.New("Redis address cannot be empty")
 	}
 
 	return config, nil
 }
 
-func (c *ScyllaDBConfig) ToScyllaConfig() scylla.Config {
-	return scylla.Config{
+func (c *ScyllaDBConfig) ToScyllaConfig() db.ScyllaConfig {
+	return db.ScyllaConfig{
 		Hosts:    c.Hosts,
 		Keyspace: c.Keyspace,
 	}
 }
 
-func (c *RedisConfig) ToRedisConfig() redis.Config {
-	return redis.Config{
+func (c *RedisConfig) ToRedisConfig() db.RedisConfig {
+	return db.RedisConfig{
 		Address:  c.Address,
 		Password: c.Password,
 		DB:       c.DB,

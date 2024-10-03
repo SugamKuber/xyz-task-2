@@ -11,4 +11,6 @@ docker pull scylladb/scylla
 docker run --name scyllatest -d scylladb/scylla
 docker exec -it scyllatest nodetool status
 docker exec -it scyllatest cqlsh
-- 
+sudo docker stop $(sudo docker ps -aq)
+
+

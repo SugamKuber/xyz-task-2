@@ -1,3 +1,4 @@
+// main.go
 package main
 
 import (
@@ -6,8 +7,7 @@ import (
 
 	"xyz-task-2/internals/api/routers"
 	"xyz-task-2/internals/configs"
-	"xyz-task-2/internals/database/redis"
-	"xyz-task-2/internals/database/scylla"
+	"xyz-task-2/internals/db"
 )
 
 func main() {
@@ -16,13 +16,13 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	scyllaClient, err := scylla.NewClient(cfg.ScyllaDB.ToScyllaConfig())
+	scyllaClient, err := db.NewScyllaClient(cfg.ScyllaDB.ToScyllaConfig())
 	if err != nil {
 		log.Fatalf("Failed to connect to ScyllaDB: %v", err)
 	}
 	defer scyllaClient.Close()
 
-	redisClient, err := redis.NewClient(cfg.Redis.ToRedisConfig())
+	redisClient, err := db.NewRedisClient(cfg.Redis.ToRedisConfig())
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}

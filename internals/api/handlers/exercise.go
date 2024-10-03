@@ -22,7 +22,7 @@ func (h *ExerciseHandler) GenerateExercise(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	recommendation, err := h.service.GetTopErrors(userID)
+	recommendation, err := h.service.GetExerciseRecommendation(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
