@@ -2,15 +2,14 @@ package routers
 
 import (
 	"xyz-task-2/internals/api/handlers"
-	"xyz-task-2/internals/database/redis"
-	"xyz-task-2/internals/database/scylla"
+	"xyz-task-2/internals/db"
 	"xyz-task-2/internals/middlewares"
 	"xyz-task-2/internals/services/recommendation"
 
 	"github.com/gorilla/mux"
 )
 
-func SetupRoutes(scyllaClient *scylla.Client, redisClient *redis.Client) *mux.Router {
+func SetupRoutes(scyllaClient *db.ScyllaClient, redisClient *db.RedisClient) *mux.Router {
 	router := mux.NewRouter()
 
 	recommendationService := recommendation.NewService(scyllaClient, redisClient)

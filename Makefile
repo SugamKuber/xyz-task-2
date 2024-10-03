@@ -1,7 +1,7 @@
 .PHONY: build run test docker-build docker-run fmt
 
 build:
-	go build -o bin/server cmd/api/main.go
+	go build -o bin/server cmd/main.go
 
 run: build
 	./bin/server

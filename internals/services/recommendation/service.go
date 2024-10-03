@@ -2,27 +2,27 @@ package recommendation
 
 import (
 	"encoding/json"
+	"sort"
 	"time"
 
-	"xyz-task-2/internals/database/redis"
-	"xyz-task-2/internals/database/scylla"
+	"xyz-task-2/internals/db"
 	"xyz-task-2/internals/models"
 )
 
 type Service struct {
-	scyllaClient *scylla.Client
-	redisClient  *redis.Client
+	scyllaClient *db.ScyllaClient
+	redisClient  *db.RedisClient
 }
 
-func NewService(scyllaClient *scylla.Client, redisClient *redis.Client) *Service {
+func NewService(scyllaClient *db.ScyllaClient, redisClient *db.RedisClient) *Service {
 	return &Service{
 		scyllaClient: scyllaClient,
 		redisClient:  redisClient,
 	}
 }
 
-func (s *Service) GetTopErrors(userID string) (models.ExerciseRecommendation, error) {
-	cacheKey := "user:" + userID + ":top_errors"
+func (s *Service) GetExerciseRecommendation(userID string) (models.ExerciseRecommendation, error) {
+	cacheKey := "user:" + userID + ":exercise_recommendation"
 
 	cachedData, err := s.redisClient.Get(cacheKey)
 	if err == nil {
@@ -39,8 +39,8 @@ func (s *Service) GetTopErrors(userID string) (models.ExerciseRecommendation, er
 	}
 
 	recommendation := models.ExerciseRecommendation{
-		UserID: userID,
-		Errors: errors,
+		UserID:    userID,
+		TopErrors: groupErrorsByCategory(errors),
 	}
 
 	jsonData, _ := json.Marshal(recommendation)
@@ -49,33 +49,23 @@ func (s *Service) GetTopErrors(userID string) (models.ExerciseRecommendation, er
 	return recommendation, nil
 }
 
-func (s *Service) GenerateExercise(userID string) (models.Exercise, error) {
-	topErrors, err := s.GetTopErrors(userID)
-	if err != nil {
-		return models.Exercise{}, err
+func groupErrorsByCategory(errors []models.Error) []models.CategoryErrors {
+	categoryMap := make(map[string][]models.Error)
+	for _, err := range errors {
+		categoryMap[err.Category] = append(categoryMap[err.Category], err)
 	}
 
-	var exercise models.Exercise
-	if len(topErrors.Errors) > 0 {
-		topError := topErrors.Errors[0]
-		exercise = models.Exercise{
-			UserID:      userID,
-			Category:    topError.Category,
-			Subcategory: topError.Subcategory,
-			Content:     generateExerciseContent(topError.Category, topError.Subcategory),
-		}
-	} else {
-		exercise = models.Exercise{
-			UserID:   userID,
-			Category: "General",
-			Content:  "Practice your general English skills.",
-		}
+	var categoryErrors []models.CategoryErrors
+	for category, errors := range categoryMap {
+		categoryErrors = append(categoryErrors, models.CategoryErrors{
+			Category: category,
+			Errors:   errors,
+		})
 	}
 
-	return exercise, nil
-}
+	sort.Slice(categoryErrors, func(i, j int) bool {
+		return categoryErrors[i].Errors[0].Frequency > categoryErrors[j].Errors[0].Frequency
+	})
 
-func generateExerciseContent(category, subcategory string) string {
-
-	return "Exercise content for " + category + " - " + subcategory
+	return categoryErrors
 }
