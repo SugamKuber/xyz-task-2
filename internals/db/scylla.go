@@ -1,7 +1,7 @@
 package db
 
 import (
-	"fmt"
+	"sort"
 	"xyz-task-2/internals/models"
 
 	"github.com/gocql/gocql"
@@ -42,30 +42,31 @@ func (sc *ScyllaClient) GetSession() *gocql.Session {
 func (c *ScyllaClient) GetTopErrors(userID string, limit int) ([]models.Error, error) {
 	var errors []models.Error
 	query := `
-		SELECT error_category, error_subcategory, frequency
+		SELECT error_category, frequency
 		FROM error_frequencies
 		WHERE user_id = ?
-		ORDER BY frequency DESC
-		LIMIT ?
 	`
-	iter := c.session.Query(query, userID, limit).Iter()
-	fmt.Println(iter)
-	fmt.Println("::::")
-
-	var category, subcategory string
+	iter := c.session.Query(query, userID).Iter()
+	var category string
 	var frequency int
-	for iter.Scan(&category, &subcategory, &frequency) {
+	for iter.Scan(&category, &frequency) {
 		errors = append(errors, models.Error{
-			Category:    category,
-			Subcategory: subcategory,
-			Frequency:   frequency,
+			Category:  category,
+			Frequency: frequency,
 		})
 	}
 	if err := iter.Close(); err != nil {
 		return nil, err
 	}
 
-	return errors, nil
+	sort.Slice(errors, func(i, j int) bool {
+		return errors[i].Frequency > errors[j].Frequency
+	})
+
+	if limit > len(errors) {
+		limit = len(errors)
+	}
+	return errors[:limit], nil
 }
 
 func (c *ScyllaClient) Close() {

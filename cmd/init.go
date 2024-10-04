@@ -19,13 +19,7 @@ var (
 )
 
 var (
-	errorCategories    = []string{"Grammar", "Vocabulary", "Pronunciation", "Content"}
-	errorSubCategories = map[string][]string{
-		"Grammar":       {"Adverb", "Pronoun", "Tense", "Subject-Verb Agreement"},
-		"Vocabulary":    {"Incorrect Word", "Word Order", "Collocation"},
-		"Pronunciation": {"MisPronounced_Syllable", "Stress", "Intonation"},
-		"Content":       {"Coherence", "Relevance", "Clarity"},
-	}
+	errorCategories = []string{"Grammar", "Vocabulary", "Pronunciation", "Content"}
 )
 
 func init() {
@@ -91,25 +85,49 @@ func createTables() error {
             conversation_id UUID,
             timestamp TIMESTAMP,
             error_category TEXT,
-            error_subcategory TEXT,
             error_details TEXT,
-            PRIMARY KEY ((user_id), error_category, error_subcategory, conversation_id, timestamp)
-        ) WITH CLUSTERING ORDER BY (error_category ASC, error_subcategory ASC, conversation_id DESC, timestamp DESC)`,
-		`CREATE TABLE IF NOT EXISTS error_frequencies (
-            user_id UUID,
-            frequency INT,
-            error_category TEXT,
-            error_subcategory TEXT,
-            PRIMARY KEY ((user_id), frequency, error_category, error_subcategory)
-        )`,
-	}
+            PRIMARY KEY ((user_id), error_category, conversation_id, timestamp)
+        ) WITH CLUSTERING ORDER BY (error_category ASC, conversation_id DESC, timestamp DESC)`,
 
+		`CREATE TABLE IF NOT EXISTS error_frequencies (
+			user_id UUID,
+			error_category TEXT,
+			frequency counter,
+			PRIMARY KEY ((user_id), error_category)
+		);`,
+	}
 	for _, query := range queries {
 		if err := scyllaClient.Execute(query); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+func generateAndInsertErrors(user models.User) error {
+	for i := 0; i < 100; i++ {
 
+		conversationID := gocql.TimeUUID()
+		timestamp := time.Now().Add(-time.Duration(rand.Intn(30)) * 24 * time.Hour)
+
+		errorCategory := errorCategories[rand.Intn(len(errorCategories))]
+		errorDetails := fmt.Sprintf("Error details for %s", errorCategory)
+
+		userErrorQuery := "INSERT INTO user_errors (user_id, conversation_id, timestamp, error_category, error_details) VALUES (?, ?, ?, ?, ?)"
+		if err := scyllaClient.Execute(userErrorQuery, user.ID, conversationID, timestamp, errorCategory, errorDetails); err != nil {
+			return err
+		}
+
+		updateFrequencyQuery := `
+			UPDATE error_frequencies 
+			SET frequency = frequency + 1 
+			WHERE user_id = ? AND error_category = ?
+		`
+		if err := scyllaClient.Execute(updateFrequencyQuery, user.ID, errorCategory); err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("Inserted data for user %s\n", user.Username)
 	return nil
 }
 
@@ -145,36 +163,4 @@ func generateUsers(count int) []models.User {
 func insertUser(user models.User) error {
 	query := "INSERT INTO users (id, username) VALUES (?, ?)"
 	return scyllaClient.Execute(query, user.ID, user.Username)
-}
-
-func generateAndInsertErrors(user models.User) error {
-	for i := 0; i < 100; i++ {
-		conversationID := gocql.TimeUUID()
-		timestamp := time.Now().Add(-time.Duration(rand.Intn(30)) * 24 * time.Hour)
-		errorCategory := errorCategories[rand.Intn(len(errorCategories))]
-		errorSubCategory := errorSubCategories[errorCategory][rand.Intn(len(errorSubCategories[errorCategory]))]
-		errorDetails := fmt.Sprintf("Error details for %s - %s", errorCategory, errorSubCategory)
-
-		query := "INSERT INTO user_errors (user_id, conversation_id, timestamp, error_category, error_subcategory, error_details) VALUES (?, ?, ?, ?, ?, ?)"
-		if err := scyllaClient.Execute(query, user.ID, conversationID, timestamp, errorCategory, errorSubCategory, errorDetails); err != nil {
-			return err
-		}
-
-		selectQuery := "SELECT frequency FROM error_frequencies WHERE user_id = ? AND error_category = ? AND error_subcategory = ?"
-		var currentFrequency int
-
-		scyllaClient.Query(selectQuery, user.ID, errorCategory, errorSubCategory).Scan(&currentFrequency)
-
-		updatedFrequency := currentFrequency + 1
-		updateQuery := "UPDATE error_frequencies SET frequency = ? WHERE user_id = ? AND error_category = ? AND error_subcategory = ?"
-		scyllaClient.Execute(updateQuery, updatedFrequency, user.ID, errorCategory, errorSubCategory)
-
-		cacheKey := fmt.Sprintf("user:%s:errors", user.ID)
-		if err := redisClient.Set(cacheKey, "", 24*time.Hour); err != nil {
-			return err
-		}
-	}
-
-	fmt.Printf("Inserted data for user %s\n", user.Username)
-	return nil
 }
