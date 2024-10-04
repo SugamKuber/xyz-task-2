@@ -8,5 +8,6 @@ type ExerciseRecommendation struct {
 type User struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
-	Email    string `json:"email"`
+	// Email    string `json:"email"`
+	// Write Logic to generate valid email and insert
 }

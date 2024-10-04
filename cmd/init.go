@@ -103,6 +103,7 @@ func createTables() error {
 		    PRIMARY KEY ((user_id), error_category, error_subcategory)
 		);`,
 	}
+	// Improvements needed, this is a bad approach
 	for _, query := range queries {
 		if err := scyllaClient.Execute(query); err != nil {
 			return err
@@ -137,6 +138,7 @@ func generateAndInsertErrors(user models.User) error {
 			return err
 		}
 	}
+	// Improvements needed, but this doesnt matter since real time application doesnt have to mock
 
 	fmt.Printf("Inserted data for user %s\n", user.Username)
 	return nil

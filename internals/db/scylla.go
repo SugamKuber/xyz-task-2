@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"sort"
 	"xyz-task-2/internals/models"
 
@@ -46,6 +47,7 @@ func (c *ScyllaClient) GetTopErrors(userID string, limit int) ([]models.Error, e
 		FROM error_frequencies
 		WHERE user_id = ?
 	`
+	// Improvements needed, this is a bad approach
 	iter := c.session.Query(query, userID).Iter()
 	var category, subcategory string
 	var frequency int
@@ -70,6 +72,28 @@ func (c *ScyllaClient) GetTopErrors(userID string, limit int) ([]models.Error, e
 	return errors[:limit], nil
 }
 
+func (c *ScyllaClient) GetUsers() ([]models.User, error) {
+	var users []models.User
+	query := `
+		SELECT id, username FROM users;
+	`
+	iter := c.session.Query(query).Iter()
+	var id string
+	var username string
+	fmt.Println("iteriteriteriteriteriteriteriteriteriteriteriteriteriteriteriter")
+	for iter.Scan(&id, &username) {
+		users = append(users, models.User{
+			ID:       id,
+			Username: username,
+		})
+	}
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+	fmt.Println(users)
+	fmt.Println(":::::::::::::::::::::::::::::::::::::::::::::::::::")
+	return users, nil
+}
 func (c *ScyllaClient) Close() {
 	c.session.Close()
 }
