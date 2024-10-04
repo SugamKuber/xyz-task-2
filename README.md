@@ -18,10 +18,10 @@ Please read the below setup and docs to setup on local (API given below)
 - **Tunable Consistency**: Offers both strong and eventual consistency.
 
 ## Why Golang
-- **Concurrency Support**: BuiltIn support for goroutines, ideal for high concurrency like the current application.
+- **Concurrency Support**: Built-in support for goroutines, ideal for high concurrency like the current application.
 - **Performance**: Compiled language, faster execution than interpreted languages.
-- **Simplicity**: Clean syntax & easy to maintain and deploy.
-- **Efficient Resource Utilization**: Low memory footprint, suitable for distributed systems.=
+- **Efficient Resource Utilization**: Low memory footprint, suitable for distributed systems.
+- **Better Than Python for Performance**: Golang is faster and uses fewer resources compared to Python, which can be slower for high concurrency systems.
 
 ## Schema Design (Detailed)
 
