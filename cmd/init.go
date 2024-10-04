@@ -19,7 +19,13 @@ var (
 )
 
 var (
-	errorCategories = []string{"Grammar", "Vocabulary", "Pronunciation", "Content"}
+	errorCategories    = []string{"Grammar", "Vocabulary", "Pronunciation", "Content"}
+	errorSubcategories = map[string][]string{
+		"Grammar":       {"Verb Agreement", "Tense", "Article Usage"},
+		"Vocabulary":    {"Word Choice", "Idiomatic Expressions", "Collocations"},
+		"Pronunciation": {"Stress", "Intonation", "Phoneme Production"},
+		"Content":       {"Coherence", "Relevance", "Depth"},
+	}
 )
 
 func init() {
@@ -81,19 +87,20 @@ func createTables() error {
             username TEXT
         )`,
 		`CREATE TABLE IF NOT EXISTS user_errors (
-            user_id UUID,
-            conversation_id UUID,
-            timestamp TIMESTAMP,
-            error_category TEXT,
-            error_details TEXT,
-            PRIMARY KEY ((user_id), error_category, conversation_id, timestamp)
-        ) WITH CLUSTERING ORDER BY (error_category ASC, conversation_id DESC, timestamp DESC)`,
-
+		    user_id UUID,
+		    conversation_id UUID,
+		    timestamp TIMESTAMP,
+		    error_category TEXT,
+		    error_subcategory TEXT,
+		    error_details TEXT,
+		    PRIMARY KEY ((user_id), error_category, error_subcategory, conversation_id, timestamp)
+		) WITH CLUSTERING ORDER BY (error_category ASC, error_subcategory ASC, conversation_id DESC, timestamp DESC);`,
 		`CREATE TABLE IF NOT EXISTS error_frequencies (
-			user_id UUID,
-			error_category TEXT,
-			frequency counter,
-			PRIMARY KEY ((user_id), error_category)
+		    user_id UUID,
+		    error_category TEXT,
+		    error_subcategory TEXT,
+		    frequency counter,
+		    PRIMARY KEY ((user_id), error_category, error_subcategory)
 		);`,
 	}
 	for _, query := range queries {
@@ -105,24 +112,28 @@ func createTables() error {
 }
 func generateAndInsertErrors(user models.User) error {
 	for i := 0; i < 100; i++ {
-
 		conversationID := gocql.TimeUUID()
 		timestamp := time.Now().Add(-time.Duration(rand.Intn(30)) * 24 * time.Hour)
 
 		errorCategory := errorCategories[rand.Intn(len(errorCategories))]
-		errorDetails := fmt.Sprintf("Error details for %s", errorCategory)
+		errorSubcategory := errorSubcategories[errorCategory][rand.Intn(len(errorSubcategories[errorCategory]))]
+		errorDetails := fmt.Sprintf("Error details for %s - %s", errorCategory, errorSubcategory)
 
-		userErrorQuery := "INSERT INTO user_errors (user_id, conversation_id, timestamp, error_category, error_details) VALUES (?, ?, ?, ?, ?)"
-		if err := scyllaClient.Execute(userErrorQuery, user.ID, conversationID, timestamp, errorCategory, errorDetails); err != nil {
+		userErrorQuery := `
+            INSERT INTO user_errors 
+            (user_id, conversation_id, timestamp, error_category, error_subcategory, error_details) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        `
+		if err := scyllaClient.Execute(userErrorQuery, user.ID, conversationID, timestamp, errorCategory, errorSubcategory, errorDetails); err != nil {
 			return err
 		}
 
 		updateFrequencyQuery := `
-			UPDATE error_frequencies 
-			SET frequency = frequency + 1 
-			WHERE user_id = ? AND error_category = ?
-		`
-		if err := scyllaClient.Execute(updateFrequencyQuery, user.ID, errorCategory); err != nil {
+            UPDATE error_frequencies 
+            SET frequency = frequency + 1 
+            WHERE user_id = ? AND error_category = ? AND error_subcategory = ?
+        `
+		if err := scyllaClient.Execute(updateFrequencyQuery, user.ID, errorCategory, errorSubcategory); err != nil {
 			return err
 		}
 	}

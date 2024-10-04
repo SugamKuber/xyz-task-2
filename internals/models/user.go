@@ -1,8 +1,8 @@
 package models
 
 type ExerciseRecommendation struct {
-	UserID    string           `json:"user_id"`
-	TopErrors []CategoryErrors `json:"topErrors"`
+	UserID    string  `json:"user_id"`
+	TopErrors []Error `json:"topErrors"`
 }
 
 type User struct {

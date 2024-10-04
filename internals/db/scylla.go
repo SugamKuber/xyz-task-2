@@ -42,17 +42,18 @@ func (sc *ScyllaClient) GetSession() *gocql.Session {
 func (c *ScyllaClient) GetTopErrors(userID string, limit int) ([]models.Error, error) {
 	var errors []models.Error
 	query := `
-		SELECT error_category, frequency
+		SELECT error_category, error_subcategory, frequency
 		FROM error_frequencies
 		WHERE user_id = ?
 	`
 	iter := c.session.Query(query, userID).Iter()
-	var category string
+	var category, subcategory string
 	var frequency int
-	for iter.Scan(&category, &frequency) {
+	for iter.Scan(&category, &subcategory, &frequency) {
 		errors = append(errors, models.Error{
-			Category:  category,
-			Frequency: frequency,
+			Category:    category,
+			Subcategory: subcategory,
+			Frequency:   frequency,
 		})
 	}
 	if err := iter.Close(); err != nil {
