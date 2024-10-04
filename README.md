@@ -3,7 +3,13 @@
 ## Deployed link
 https://stimuler.centralindia.cloudapp.azure.com/health
 
-Will be shut down after 72 hours from the current commit time
+Above link & VM vill be shut down after 72 hours or earlier (from the current commit time)
+
+Please read the below setup and docs to setup on local (API given below)
+
+- /health to check if server is running
+- /api/users to get sample users
+- /api/generate-exercise?user_id=<user ID> to get users frequent errors
 
 
 ## Server setup
